@@ -12,6 +12,7 @@ services:
     volumes:
     - userdata:/var/opt/mssql
   projectstore.identity:
+    network_mode: host
     image: ${DOCKER_REGISTRY-}projectstoreidentity
     build:
       context: .
