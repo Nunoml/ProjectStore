@@ -1,4 +1,6 @@
-﻿namespace ProjectStore.Identity.Model
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ProjectStore.Identity.Model
 {
     public class User
     {

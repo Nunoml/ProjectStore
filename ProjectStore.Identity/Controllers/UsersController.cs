@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectStore.Identity.Model;
 using ProjectStore.Identity.Model.DBContext;
+using System.Security.Cryptography;
+using ProjectStore.Identity.RequestObject;
+using ProjectStore.Identity.Utility;
 
 //TODO : Criar autenticação
 namespace ProjectStore.Identity.Controllers
@@ -15,11 +19,13 @@ namespace ProjectStore.Identity.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
+        private readonly IConfiguration _config;
         private readonly UserContext _context;
 
-        public UsersController(UserContext context)
+        public UsersController(UserContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         // GET: api/Users
@@ -74,15 +80,58 @@ namespace ProjectStore.Identity.Controllers
             return NoContent();
         }
 
-        // POST: api/Users
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        // POST: api/Users/
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=212375
+        // Criar utilizador aqui
+        [HttpPost("create")]
+        public async Task<ActionResult<User>> CreateUser(RegisterUserRequest user)
         {
-            _context.Users.Add(user);
+            // Verificar se alguns dados já estão a ser usados
+            //TODO : Talvez criar uma forma de interagir com o entity framework numa forma mais simpatica aqui?
+            User result = await _context.Set<User>().FirstOrDefaultAsync(query => query.Email == user.Email);
+            if(result != null)
+            {
+                string message = string.Format("Email {0} already in use!", user.Email);
+                return Problem(message, statusCode: (int)HttpStatusCode.BadRequest);
+            }
+
+            // Hash
+            user.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(user.Password, 14);
+
+            var newUser = user.AsUser();
+
+            _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { id = user.UserId }, user);
+            return CreatedAtAction("GetUser", new { id = newUser.UserId }, newUser);
+        }
+
+        [HttpPost("login")]
+        public async Task<ActionResult<User>> LoginUser(LoginUserRequest user)
+        {
+            // Verificar se o user existe.
+            //TODO : Talvez criar uma forma de interagir com o entity framework numa forma mais simpatica aqui?
+            User result = await _context.Set<User>().FirstOrDefaultAsync(query => query.Email == user.Email);
+            // Mesmo se o utilizador não existe, melhor tentar fazer a API trabalhar para atrasar o processamento do pedido, evitando certo tipos de ataque.
+            if (result == null)
+            {
+                result = new User();
+                result.Password = "ouhjghuasiugbsihtbiwfdsaf.saghiksadhbfiashbdff";
+            }
+
+            // Hash
+            bool isCorrect = BCrypt.Net.BCrypt.Verify(user.Password, result.Password);
+
+            if (!isCorrect)
+            {
+                string message = string.Format("User {0} does not exist or password is incorrect!", user.Email);
+                return Problem(message, statusCode: (int)HttpStatusCode.BadRequest);
+            }
+
+            
+            string token = Jwt.CreateJWTToken(result.UserId, result.Email, _config);
+
+            return Ok(new ReturnUserToken(result.UserId, token));
         }
 
         // DELETE: api/Users/5
