@@ -8,13 +8,10 @@ namespace ProjectStore.Identity.Utility
     {
         public static User AsUser(this RegisterUserRequest request)
         {
-            User user = new User();
-            user.FirstName = request.FirstName;
-            user.LastName = request.LastName;
-            user.Email = request.Email;
+            User user = new User{
+                FirstName = request.FirstName, LastName = request.LastName, Email = request.Email, Password = request.Password
+            };
             user.PhoneNumber = request.PhoneNumber;
-            user.Password = request.Password;
-
             return user;
         }
     }

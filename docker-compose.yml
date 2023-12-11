@@ -12,7 +12,6 @@ services:
     volumes:
     - userdata:/var/opt/mssql
   projectstore.identity:
-    network_mode: host
     image: ${DOCKER_REGISTRY-}projectstoreidentity
     build:
       context: .
@@ -20,7 +19,8 @@ services:
     depends_on:
       - identitydb
     ports:
-    - "1432:80"
+    - "3430:8080"
+    - "3431:8081"
 
   projectstore.fileservice:
     image: ${DOCKER_REGISTRY-}projectstorefileservice
@@ -28,7 +28,14 @@ services:
       context: .
       dockerfile: ProjectStore/Dockerfile
     ports:
-    - "1431:80"
+    - "2430:8080"
+    - "2431:8081"
+  projectstore.proxy:
+    image: nginx
+    ports:
+    - "8080:8080"
+    volumes:
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 volumes:
   userdata:
     external: true
