@@ -22,4 +22,4 @@ RUN dotnet publish "./ProjectStore.Identity.csproj" -c $BUILD_CONFIGURATION -o /
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ProjectStore.Identity.dll"]
+ENTRYPOINT ["./boot.sh"]

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.IdentityModel.Tokens;
 using System.Net;
 using System.Text;
@@ -10,6 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.KnownProxies.Add(IPAddress.Parse("127.0.0.11"));
+});
+
+builder.Services.AddHttpsRedirection(o =>
+{
+    o.HttpsPort = 8081;
 });
 
 // JWT
@@ -48,6 +54,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.MapGet("/",()=>"test");
 
 app.UseCors("AnyOrigin");
+    
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
