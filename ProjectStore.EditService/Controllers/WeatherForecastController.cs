@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace ProjectStore.Identity.Controllers
+namespace ProjectStore.EditService.Controllers
 {
     [ApiController]
     [Route("[controller]")]

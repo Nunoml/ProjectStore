@@ -1,4 +1,4 @@
-namespace ProjectStore.Identity
+namespace ProjectStore.EditService
 {
     public class WeatherForecast
     {
