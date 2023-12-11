@@ -32,10 +32,13 @@ services:
     - "2431:8081"
   projectstore.proxy:
     image: nginx
+    depends_on:
+    - projectstore.identity
+    - projectstore.fileservice
     ports:
     - "8080:8080"
     volumes:
-    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:rw
 volumes:
   userdata:
     external: true
