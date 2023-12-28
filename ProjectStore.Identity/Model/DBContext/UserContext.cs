@@ -7,7 +7,7 @@ namespace ProjectStore.Identity.Model.DBContext
         public DbSet<User> Users { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=identitydb,1433;Database=Userdb;User Id=sa;Password=SqAdmin123!!;");
+            optionsBuilder.UseSqlServer("Server=localhost,1433;Database=Userdb;User Id=sa;Password=SqAdmin123!!;");
         }
     }
 }

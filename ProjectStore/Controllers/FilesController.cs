@@ -24,8 +24,15 @@ namespace ProjectStore.FileService.Controllers
 
         // POST api/<FilesController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<IActionResult> Post([FromBody] IFormFile file)
         {
+            // A pasta root do utilizador seria o id do user?
+            if (file == null || file.Length == 0)
+                return BadRequest("No file");
+
+            //Upload dos ficheiros
+            
+            return Ok();
         }
 
         // PUT api/<FilesController>/5
