@@ -1,7 +1,24 @@
 version: '3.4'
 
 services:
+  filedb:
+    container_name: filedb
+    hostname: filedb
+    networks:
+      - test
+    image: mcr.microsoft.com/mssql/server:latest
+    environment:
+      SA_PASSWORD: "SqAdmin123!!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1435:1433"
+    volumes:
+      - filedata:/var/opt/mssql
+
   identitydb:
+    container_name: identitydb
+    hostname: identitydb
     networks:
       - test
     image: mcr.microsoft.com/mssql/server:latest
@@ -31,6 +48,8 @@ services:
     networks:
       - test
     image: ${DOCKER_REGISTRY-}projectstorefileservice
+    depends_on:
+    - filedb
     build:
       context: .
       dockerfile: ProjectStore/Dockerfile
@@ -39,6 +58,8 @@ services:
       - "2431:8081"
 
   projectstore.proxy:
+    container_name: projectstore.proxy
+    hostname: projectstore.proxy
     networks:
       - test
     build:
