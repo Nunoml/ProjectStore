@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ProjectStore.FileService.Model;
 using ProjectStore.FileService.Model.DBContext;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -12,11 +13,11 @@ namespace ProjectStore.FileService.Controllers
         private readonly FileContext _fileContext;
         private readonly DirectoryContext _dirContext;
 
-        public FilesController(FileContext fileContext, DirectoryContext dirContext)
+        /*public FilesController(FileContext fileContext, DirectoryContext dirContext)
         {
             _fileContext = fileContext;
             _dirContext = dirContext;
-        }
+        }*/
 
 
         // GET: api/<FilesController>
@@ -39,19 +40,32 @@ namespace ProjectStore.FileService.Controllers
 
         // POST api/<FilesController>
         // Upload or create a new file, depending on whats specified in the request.
-        [HttpPost("{path}")]
-        public async Task<IActionResult> Post([FromBody] IFormFile file)
+        [HttpPost()]
+        [RequestSizeLimit(999_000_000)]
+        public async Task<IActionResult> Post(IFormFile file)
         {
             // A pasta root do utilizador seria o id do user?
             if (file == null || file.Length == 0)
                 return BadRequest("No file");
 
+            string filePath = "./files/0/" + file.FileName;
+            Directory.CreateDirectory("./files/0/");
             //Upload dos ficheiros
             //Ideia basica de upload de ficheiros
             using (var _fileStream = new FileStream("./files/0/" + file.FileName, FileMode.Create))
             {
                 await file.CopyToAsync(_fileStream);
             }
+            //Criar entrada na DB TODO
+            FileEntity newFile = new FileEntity
+            {
+                FileName = file.FileName,
+                Path = ".",
+                UserId = 0
+            };
+
+            _fileContext.Add(newFile);
+            await _fileContext.SaveChangesAsync();
             
             return Ok();
         }

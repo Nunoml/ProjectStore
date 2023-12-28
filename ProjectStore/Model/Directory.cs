@@ -1,6 +1,6 @@
 ﻿namespace ProjectStore.FileService.Model
 {
-    public class Directory
+    public class DirectoryEntity
     {
         public int UserId { get; set; }
         public int DirId { get; set; }
