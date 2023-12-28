@@ -40,8 +40,6 @@ namespace ProjectStore.FileService.Controllers
         // POST api/<FilesController>
         // Upload or create a new file, depending on whats specified in the request.
         [HttpPost("{path}")]
-        public void Post(string path, [FromBody] string value)
-        [HttpPost]
         public async Task<IActionResult> Post([FromBody] IFormFile file)
         {
             // A pasta root do utilizador seria o id do user?
@@ -49,6 +47,11 @@ namespace ProjectStore.FileService.Controllers
                 return BadRequest("No file");
 
             //Upload dos ficheiros
+            //Ideia basica de upload de ficheiros
+            using (var _fileStream = new FileStream("./files/0/" + file.FileName, FileMode.Create))
+            {
+                await file.CopyToAsync(_fileStream);
+            }
             
             return Ok();
         }
