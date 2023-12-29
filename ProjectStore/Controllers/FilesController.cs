@@ -30,7 +30,7 @@ namespace ProjectStore.FileService.Controllers
         {
             //TODO: Implementar directories
             List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == path && q.UserId == 0).ToListAsync();
-            if(files.Count == 0)
+            if (files.Count == 0)
             {
                 return NotFound();
             }
@@ -45,12 +45,12 @@ namespace ProjectStore.FileService.Controllers
         public async Task<IActionResult> Get(string name, bool read, string path = "")
         {
             string userPath = "./files/0/" + path;
-            if(name == null)
+            if (name == null)
             {
                 return BadRequest();
             }
-            FileEntity file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"{userPath}{name}"));
-            if(file == null)
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"{userPath}{name}"));
+            if (file == null)
             {
                 return NotFound();
             }
@@ -60,7 +60,7 @@ namespace ProjectStore.FileService.Controllers
                 // Transferir o ficheiro
                 string filePath = userPath + file.FileName;
 
-                if(System.IO.File.Exists(filePath))
+                if (System.IO.File.Exists(filePath))
                 {
                     return File(System.IO.File.OpenRead(filePath), "application/octet-stream", Path.GetFileName(filePath));
                 }
@@ -102,18 +102,64 @@ namespace ProjectStore.FileService.Controllers
 
             _fileContext.Add(newFile);
             await _fileContext.SaveChangesAsync();
-            
+
             return Ok();
         }
 
-        // PUT api/<FilesController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPost("{path}")]
+        [RequestSizeLimit(999_000_000)]
+        public async Task<IActionResult> CreateFileInPath(IFormFile file, string path)
         {
+            // Decoding
+            path = path.Replace("%2F", "/");
+            // A pasta root do utilizador seria o id do user?
+            if (file == null || file.Length == 0)
+                return BadRequest("No file");
+
+            string filePath = "./files/0/" + path + "/" + file.FileName;
+            Directory.CreateDirectory("./files/0/" + path);
+            //Upload dos ficheiros
+            //Ideia basica de upload de ficheiros
+            using (var _fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(_fileStream);
+            }
+
+            //Criar representação de uma pasta.
+            string currDir = "";
+            foreach (var dirName in path.Split("/"))
+            {
+                DirectoryEntity? dirCheck = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path == "root/" + currDir && q.DirName == dirName && q.UserId == 0);
+                if(dirCheck == null)
+                {
+                    DirectoryEntity dir = new DirectoryEntity
+                    {
+                        DirName = dirName,
+                        Path = "root/" + currDir,
+                        UserId = 0
+                    };
+                    currDir += dirName + "/";
+                    _fileContext.Add(dir);
+                }
+            };
+            
+            //Criar representação de um ficheiro
+            //TODO: Verificar se é duplicado.
+            FileEntity newFile = new FileEntity
+            {
+                FileName = file.FileName,
+                Path = "root/" + path,
+                UserId = 0
+            };
+
+            _fileContext.Add(newFile);
+            await _fileContext.SaveChangesAsync();
+
+            return Ok();
         }
 
         // DELETE api/<FilesController>/5
-        // Delete a specified file.
+        // Delete a specified file or directory.
         [HttpDelete("{path}/{name}")]
         public async Task<IActionResult> Delete(string path, string name)
         {
@@ -123,7 +169,7 @@ namespace ProjectStore.FileService.Controllers
             {
                 return BadRequest();
             }
-            FileEntity file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == 0);
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == 0);
 
             //Encontrar o ficheiro e apagar
             return Ok();
