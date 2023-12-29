@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 ProjectStore.Identity/Migrations/
+/ProjectStore/files/
+/ProjectStore/Migrations
