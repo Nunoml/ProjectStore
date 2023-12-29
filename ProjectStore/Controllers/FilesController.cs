@@ -30,7 +30,8 @@ namespace ProjectStore.FileService.Controllers
         {
             //TODO: Implementar directories
             List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == path && q.UserId == 0).ToListAsync();
-            if (files.Count == 0)
+            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == path && q.UserId == 0).ToListAsync();
+            if (files.Count == 0 && directories.Count == 0)
             {
                 return NotFound();
             }
@@ -170,7 +171,7 @@ namespace ProjectStore.FileService.Controllers
                 return BadRequest();
             }
             FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == 0);
-
+            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == path + name && q.UserId == 0);
             //Encontrar o ficheiro e apagar
             return Ok();
         }
