@@ -5,12 +5,10 @@ namespace ProjectStore.FileService.Model
     public class FileEntity
     {
         [Key]
+        public int FileID { get; set; }
         [Required]
-        public int UserId;
-        [Key]
-        [Required]
-        public int FileID;
-        public required string FileName;
-        public required string Path;
+        public int UserId { get; set; }
+        public required string FileName { get; set; }
+        public required string Path { get; set; }
     }
 }

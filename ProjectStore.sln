@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectStore.Identity", "Pr
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectStore.EditService", "ProjectStore.EditService\ProjectStore.EditService.csproj", "{4BAE89F9-31B2-468F-8C8C-419596011782}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nginx", "nginx", "{7CFEDF7F-28BD-4AF3-88BD-41BABA295E32}"
 	ProjectSection(SolutionItems) = preProject
 		nginx\Dockerfile = nginx\Dockerfile
@@ -35,10 +33,6 @@ Global
 		{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4BAE89F9-31B2-468F-8C8C-419596011782}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4BAE89F9-31B2-468F-8C8C-419596011782}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4BAE89F9-31B2-468F-8C8C-419596011782}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4BAE89F9-31B2-468F-8C8C-419596011782}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

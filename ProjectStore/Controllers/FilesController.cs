@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 using ProjectStore.FileService.Model;
 using ProjectStore.FileService.Model.DBContext;
+using System.IO;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -11,13 +14,11 @@ namespace ProjectStore.FileService.Controllers
     public class FilesController : ControllerBase
     {
         private readonly FileContext _fileContext;
-        private readonly DirectoryContext _dirContext;
 
-        /*public FilesController(FileContext fileContext, DirectoryContext dirContext)
+        public FilesController(FileContext fileContext)
         {
             _fileContext = fileContext;
-            _dirContext = dirContext;
-        }*/
+        }
 
 
         // GET: api/<FilesController>
@@ -25,17 +26,52 @@ namespace ProjectStore.FileService.Controllers
         // User id grabbed from authorization headers?
         // NOTE: No need to read any files unless asked to do so
         [HttpGet("{path}")]
-        public IEnumerable<string> Get(string path)
+        public async Task<IActionResult> Get(string path)
         {
-            return new string[] { "value1", "value2" };
+            //TODO: Implementar directories
+            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == path && q.UserId == 0).ToListAsync();
+            if(files.Count == 0)
+            {
+                return NotFound();
+            }
+
+            //TODO RETORNAR LISTA AQUI
+            return Ok();
         }
 
         // GET api/<FilesController>/5
-        // Lists some information about the file, maybe check the metadata of uploaded file? or store the metadata in the db
+        // Lists some information about the file, store the metadata in the db
         [HttpGet("{path}/{name}/{read:bool}")]
-        public string Get(string path, string name, bool read)
+        public async Task<IActionResult> Get(string name, bool read, string path = "")
         {
-            return "value";
+            string userPath = "./files/0/" + path;
+            if(name == null)
+            {
+                return BadRequest();
+            }
+            FileEntity file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"{userPath}{name}"));
+            if(file == null)
+            {
+                return NotFound();
+            }
+
+            if (read)
+            {
+                // Transferir o ficheiro
+                string filePath = userPath + file.FileName;
+
+                if(System.IO.File.Exists(filePath))
+                {
+                    return File(System.IO.File.OpenRead(filePath), "application/octet-stream", Path.GetFileName(filePath));
+                }
+
+                return StatusCode(500, "Could not find file when trying to download it.");
+            }
+            else
+            {
+                // Retornar DTO com metadata
+                return Ok();
+            }
         }
 
         // POST api/<FilesController>
@@ -60,7 +96,7 @@ namespace ProjectStore.FileService.Controllers
             FileEntity newFile = new FileEntity
             {
                 FileName = file.FileName,
-                Path = ".",
+                Path = "root",
                 UserId = 0
             };
 
@@ -78,9 +114,19 @@ namespace ProjectStore.FileService.Controllers
 
         // DELETE api/<FilesController>/5
         // Delete a specified file.
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpDelete("{path}/{name}")]
+        public async Task<IActionResult> Delete(string path, string name)
         {
+            // Usado para eleminar o ficheiro do servidor
+            string userPath = "./files/0/" + path;
+            if (name == null)
+            {
+                return BadRequest();
+            }
+            FileEntity file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == 0);
+
+            //Encontrar o ficheiro e apagar
+            return Ok();
         }
     }
 }

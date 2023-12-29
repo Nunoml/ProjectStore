@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.IdentityModel.Tokens;
+using ProjectStore.Identity.Model.DBContext;
 using System.Net;
 using System.Text;
 
@@ -17,6 +18,8 @@ builder.Services.AddHttpsRedirection(o =>
 {
     o.HttpsPort = 8081;
 });
+
+builder.Services.AddDbContext<UserContext>();
 
 // JWT
 
