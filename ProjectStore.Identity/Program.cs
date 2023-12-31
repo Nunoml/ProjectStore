@@ -9,16 +9,6 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.Configure<ForwardedHeadersOptions>(o =>
-{
-    o.KnownProxies.Add(IPAddress.Parse("127.0.0.11"));
-});
-
-builder.Services.AddHttpsRedirection(o =>
-{
-    o.HttpsPort = 8081;
-});
-
 builder.Services.AddDbContext<UserContext>();
 
 // JWT
@@ -53,12 +43,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
-
-app.MapGet("/",()=>"test");
-
-app.UseCors("AnyOrigin");
-    
-
+   
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

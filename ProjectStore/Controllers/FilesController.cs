@@ -21,16 +21,16 @@ namespace ProjectStore.FileService.Controllers
         }
 
 
-        // GET: api/<FilesController>
-        // List all files associated with a specified user id in a path.
-        // User id grabbed from authorization headers?
-        // NOTE: No need to read any files unless asked to do so
-        [HttpGet("{path}")]
-        public async Task<IActionResult> Get(string path)
+        /// <summary>
+        /// Obtem todos os ficheiros e diretorias guardadas do utilizador na diretoria principal.
+        /// </summary>
+        /// <returns>A lista de ficheiros e diretorias na pasta "root" do utilizador</returns>
+        [HttpGet()]
+        public async Task<IActionResult> GetRoot()
         {
             //TODO: Implementar directories
-            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == path && q.UserId == 0).ToListAsync();
-            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == path && q.UserId == 0).ToListAsync();
+            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/" && q.UserId == 0).ToListAsync();
+            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/" && q.UserId == 0).ToListAsync();
             if (files.Count == 0 && directories.Count == 0)
             {
                 return NotFound();
@@ -40,8 +40,34 @@ namespace ProjectStore.FileService.Controllers
             return Ok();
         }
 
-        // GET api/<FilesController>/5
-        // Lists some information about the file, store the metadata in the db
+
+        /// <summary>
+        /// Obtem todos os ficheiros e diretorias guardadas do utilizador na diretoria especificada
+        /// </summary>
+        /// <param name="path">A diretoria a analisar.</param>
+        /// <returns>A lista de ficheiros e diretorias na pasta especificada no valor path.</returns>
+        [HttpGet("{path}")]
+        public async Task<IActionResult> Get(string path)
+        {
+            //TODO: Implementar directories
+            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
+            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
+            if (files.Count == 0 && directories.Count == 0)
+            {
+                return NotFound();
+            }
+
+            //TODO RETORNAR LISTA AQUI
+            return Ok();
+        }
+
+        /// <summary>
+        /// Retorna metadata sobre o ficheiro, ou transfere o ficheiro
+        /// </summary>
+        /// <param name="name">O nome do ficheiro</param>
+        /// <param name="read">Especifica se é para ler o ficheiro. Atualmente transfere o ficheiro.</param>
+        /// <param name="path">O caminho para o ficheiro</param>
+        /// <returns>Metadados do ficheiro, ou o ficheiro em si.</returns>
         [HttpGet("{path}/{name}/{read:bool}")]
         public async Task<IActionResult> Get(string name, bool read, string path = "")
         {
@@ -75,8 +101,11 @@ namespace ProjectStore.FileService.Controllers
             }
         }
 
-        // POST api/<FilesController>
-        // Upload or create a new file, depending on whats specified in the request.
+        /// <summary>
+        /// Envia um ficheiro para o servidor na pasta principal.
+        /// </summary>
+        /// <param name="file">O ficheiro a enviar</param>
+        /// <returns>200 OK</returns>
         [HttpPost()]
         [RequestSizeLimit(999_000_000)]
         public async Task<IActionResult> Post(IFormFile file)
@@ -107,6 +136,12 @@ namespace ProjectStore.FileService.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Envia um ficheiro para o servidor
+        /// </summary>
+        /// <param name="file">O ficheiro a enviar</param>
+        /// <param name="path">A diretoria onde guardar o ficheiro. Se não existir, é criado uma diretoria.</param>
+        /// <returns>200 OK</returns>
         [HttpPost("{path}")]
         [RequestSizeLimit(999_000_000)]
         public async Task<IActionResult> CreateFileInPath(IFormFile file, string path)
@@ -159,8 +194,12 @@ namespace ProjectStore.FileService.Controllers
             return Ok();
         }
 
-        // DELETE api/<FilesController>/5
-        // Delete a specified file or directory.
+        /// <summary>
+        /// Elemina um ficheiro guardado no servidor.
+        /// </summary>
+        /// <param name="path">O caminho para o ficheiro</param>
+        /// <param name="name">O nome do ficheiro</param>
+        /// <returns>200 OK</returns>
         [HttpDelete("{path}/{name}")]
         public async Task<IActionResult> Delete(string path, string name)
         {

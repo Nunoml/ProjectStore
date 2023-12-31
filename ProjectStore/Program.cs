@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using ProjectStore.FileService.Model.DBContext;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<FileContext>();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
