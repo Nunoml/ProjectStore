@@ -65,6 +65,56 @@ namespace ProjectStore.FileService.Controllers
         /// </summary>
         /// <param name="name">O nome do ficheiro</param>
         /// <param name="read">Especifica se é para ler o ficheiro. Atualmente transfere o ficheiro.</param>
+        /// <param name="isdir">Especifica se o ficheiro a ler é uma diretoria.</param>
+        /// <returns></returns>
+        [HttpGet("{name}&{isdir:bool}/{read:bool}")]
+        public async Task<IActionResult> GetFileInRoot(string name, bool read, bool isdir)
+        {
+            string userPath = "./files/0/";
+            if (name == null)
+            {
+                return BadRequest();
+            }
+
+            if (isdir)
+            {
+                //correr codigo diretorias.
+                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"root/{name}"));
+                if (dir == null)
+                    return NotFound();
+
+                return Ok(new ReturnDirectoryMetadata(dir.DirName, dir.Path));
+            }
+
+            //codigo ficheiro
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{name}"));
+            if (file == null)
+            {
+                return NotFound();
+            }
+
+            if (read)
+            {
+                // Transferir o ficheiro
+                string filePath = userPath + file.FileName;
+
+                if (System.IO.File.Exists(filePath))
+                {
+                    return File(System.IO.File.OpenRead(filePath), "application/octet-stream", Path.GetFileName(filePath));
+                }
+
+                return StatusCode(500, "Could not find file when trying to download it.");
+            }
+
+            // Retornar DTO com metadata
+            return Ok(new ReturnFileMetadata(file.FileName, file.Path));
+        }
+
+        /// <summary>
+        /// Retorna metadata sobre o ficheiro, ou transfere o ficheiro
+        /// </summary>
+        /// <param name="name">O nome do ficheiro</param>
+        /// <param name="read">Especifica se é para ler o ficheiro. Atualmente transfere o ficheiro.</param>
         /// <param name="isdir">Especifica se o ficheiro a ler é uma diretoria. Como diretorias sao guardadas de uma forma diferente, é necessario logica diferente</param>
         /// <param name="path">O caminho para o ficheiro</param>
         /// <returns>Metadados do ficheiro, ou o ficheiro em si.</returns>
@@ -80,7 +130,7 @@ namespace ProjectStore.FileService.Controllers
             if(isdir)
             {
                 //correr codigo diretorias.
-                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"{userPath}{name}"));
+                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"root/{path}{name}"));
                 if (dir == null)
                     return NotFound();
 
@@ -88,7 +138,7 @@ namespace ProjectStore.FileService.Controllers
             }
 
             //codigo ficheiro
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"{userPath}{name}"));
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{path}{name}"));
             if (file == null)
             {
                 return NotFound();
@@ -109,6 +159,21 @@ namespace ProjectStore.FileService.Controllers
             
             // Retornar DTO com metadata
             return Ok(new ReturnFileMetadata(file.FileName, file.Path));
+        }
+
+
+        [HttpPut("{path}/{name}")]
+        public async Task<IActionResult> EditFileMetadata(string path, string name)
+        {
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{path}{name}"));
+            return Ok();
+        }
+
+        [HttpPut("{name}")]
+        public async Task<IActionResult> EditFileMetadataInRoot(string name)
+        {
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{name}"));
+            return Ok();
         }
 
         /// <summary>
