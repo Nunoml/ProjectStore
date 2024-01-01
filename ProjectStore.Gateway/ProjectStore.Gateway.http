@@ -1,6 +1,0 @@
-@ProjectStore.Gateway_HostAddress = http://localhost:5201
-
-GET {{ProjectStore.Gateway_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
