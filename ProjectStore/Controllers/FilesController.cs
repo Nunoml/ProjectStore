@@ -5,7 +5,7 @@ using ProjectStore.FileService.Model;
 using ProjectStore.FileService.Model.DBContext;
 using ProjectStore.FileService.RequestObject;
 using System.IO;
-
+using System;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ProjectStore.FileService.Controllers
@@ -165,7 +165,10 @@ namespace ProjectStore.FileService.Controllers
         [HttpPut("{path}/{name}")]
         public async Task<IActionResult> EditFileMetadata(string path, string name)
         {
+            string realUserPath = $"./files/0/{path}";
+            
             FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{path}{name}"));
+            
             return Ok();
         }
 
@@ -275,8 +278,8 @@ namespace ProjectStore.FileService.Controllers
         /// <param name="path">O caminho para o ficheiro</param>
         /// <param name="name">O nome do ficheiro</param>
         /// <returns>200 OK</returns>
-        [HttpDelete("{path}/{name}")]
-        public async Task<IActionResult> Delete(string path, string name)
+        [HttpDelete("{path}/{name}&{isdir:bool}")]
+        public async Task<IActionResult> Delete(string path, string name, bool isdir)
         {
             // Usado para eleminar o ficheiro do servidor
             string userPath = "./files/0/" + path;
@@ -287,6 +290,25 @@ namespace ProjectStore.FileService.Controllers
             FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == 0);
             DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == path + name && q.UserId == 0);
             //Encontrar o ficheiro e apagar
+            if (dir != null && isdir)
+            {
+                Directory.Delete($"{userPath}{dir.DirName}");
+                _fileContext.Entry(dir).State = EntityState.Deleted;
+                _fileContext.SaveChanges();
+                return Ok();
+            }
+
+            if (file == null)
+                return NotFound();
+
+            FileInfo f = new FileInfo($"{userPath}{name}");
+            if(f.Exists)
+            {
+                f.Delete();
+            }
+
+            _fileContext.Entry(file).State = EntityState.Deleted;
+            _fileContext.SaveChanges();
             return Ok();
         }
     }
