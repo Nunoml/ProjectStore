@@ -66,7 +66,7 @@ namespace ProjectStore.Identity.Controllers
         {
             // Verificar se o user existe.
             //TODO : Talvez criar uma forma de interagir com o entity framework numa forma mais simpatica aqui?
-            User result = await _context.Set<User>().FirstOrDefaultAsync(query => query.Email == user.Email);
+            User? result = await _context.Set<User>().FirstOrDefaultAsync(query => query.Email == user.Email);
             // Mesmo se o utilizador não existe, melhor tentar fazer a API trabalhar para atrasar o processamento do pedido, evitando certo tipos de ataque.
             if (result == null)
             {

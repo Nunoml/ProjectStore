@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using ProjectStore.FileService.Model;
 using ProjectStore.FileService.Model.DBContext;
+using ProjectStore.FileService.RequestObject;
 using System.IO;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -36,8 +37,8 @@ namespace ProjectStore.FileService.Controllers
                 return NotFound();
             }
 
-            //TODO RETORNAR LISTA AQUI
-            return Ok();
+            ReturnFilesListObject returnval = new ReturnFilesListObject(files, directories);
+            return Ok(returnval);
         }
 
 
@@ -57,8 +58,8 @@ namespace ProjectStore.FileService.Controllers
                 return NotFound();
             }
 
-            //TODO RETORNAR LISTA AQUI
-            return Ok();
+            ReturnFilesListObject returnval = new ReturnFilesListObject(files, directories);
+            return Ok(returnval);
         }
 
         /// <summary>
