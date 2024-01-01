@@ -29,7 +29,6 @@ namespace ProjectStore.FileService.Controllers
         [HttpGet()]
         public async Task<IActionResult> GetRoot()
         {
-            //TODO: Implementar directories
             List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/" && q.UserId == 0).ToListAsync();
             List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/" && q.UserId == 0).ToListAsync();
             if (files.Count == 0 && directories.Count == 0)
@@ -50,7 +49,6 @@ namespace ProjectStore.FileService.Controllers
         [HttpGet("{path}")]
         public async Task<IActionResult> Get(string path)
         {
-            //TODO: Implementar directories
             List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
             List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
             if (files.Count == 0 && directories.Count == 0)
@@ -67,16 +65,29 @@ namespace ProjectStore.FileService.Controllers
         /// </summary>
         /// <param name="name">O nome do ficheiro</param>
         /// <param name="read">Especifica se é para ler o ficheiro. Atualmente transfere o ficheiro.</param>
+        /// <param name="isdir">Especifica se o ficheiro a ler é uma diretoria. Como diretorias sao guardadas de uma forma diferente, é necessario logica diferente</param>
         /// <param name="path">O caminho para o ficheiro</param>
         /// <returns>Metadados do ficheiro, ou o ficheiro em si.</returns>
-        [HttpGet("{path}/{name}/{read:bool}")]
-        public async Task<IActionResult> Get(string name, bool read, string path = "")
+        [HttpGet("{path}/{name}&{isdir:bool}/{read:bool}")]
+        public async Task<IActionResult> Get(string name, bool read,bool isdir, string path = "")
         {
             string userPath = "./files/0/" + path;
             if (name == null)
             {
                 return BadRequest();
             }
+
+            if(isdir)
+            {
+                //correr codigo diretorias.
+                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"{userPath}{name}"));
+                if (dir == null)
+                    return NotFound();
+
+                return Ok(new ReturnDirectoryMetadata(dir.DirName, dir.Path));
+            }
+
+            //codigo ficheiro
             FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"{userPath}{name}"));
             if (file == null)
             {
@@ -95,11 +106,9 @@ namespace ProjectStore.FileService.Controllers
 
                 return StatusCode(500, "Could not find file when trying to download it.");
             }
-            else
-            {
-                // Retornar DTO com metadata
-                return Ok();
-            }
+            
+            // Retornar DTO com metadata
+            return Ok(new ReturnFileMetadata(file.FileName, file.Path));
         }
 
         /// <summary>
@@ -107,7 +116,7 @@ namespace ProjectStore.FileService.Controllers
         /// </summary>
         /// <param name="file">O ficheiro a enviar</param>
         /// <returns>200 OK</returns>
-        [HttpPost()]
+        [HttpPost("")]
         [RequestSizeLimit(999_000_000)]
         public async Task<IActionResult> Post(IFormFile file)
         {
