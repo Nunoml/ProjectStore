@@ -49,6 +49,7 @@ namespace ProjectStore.FileService.Controllers
         [HttpGet("{path}")]
         public async Task<IActionResult> Get(string path)
         {
+            path = path.Replace("%2F", "/");
             List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
             List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
             if (files.Count == 0 && directories.Count == 0)
@@ -70,6 +71,7 @@ namespace ProjectStore.FileService.Controllers
         [HttpGet("{name}&{isdir:bool}/{read:bool}")]
         public async Task<IActionResult> GetFileInRoot(string name, bool read, bool isdir)
         {
+            
             string userPath = "./files/0/";
             if (name == null)
             {
@@ -87,7 +89,7 @@ namespace ProjectStore.FileService.Controllers
             }
 
             //codigo ficheiro
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{name}"));
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/" + name);
             if (file == null)
             {
                 return NotFound();
@@ -121,6 +123,7 @@ namespace ProjectStore.FileService.Controllers
         [HttpGet("{path}/{name}&{isdir:bool}/{read:bool}")]
         public async Task<IActionResult> Get(string name, bool read,bool isdir, string path = "")
         {
+            path.Replace("%2F", "/");
             string userPath = "./files/0/" + path;
             if (name == null)
             {
@@ -165,6 +168,7 @@ namespace ProjectStore.FileService.Controllers
         [HttpPut("{path}/{name}")]
         public async Task<IActionResult> EditFileMetadata(string path, string name)
         {
+            path = path.Replace("%2F", "/");
             string realUserPath = $"./files/0/{path}";
             
             FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{path}{name}"));
@@ -204,7 +208,7 @@ namespace ProjectStore.FileService.Controllers
             FileEntity newFile = new FileEntity
             {
                 FileName = file.FileName,
-                Path = "root",
+                Path = "root/",
                 UserId = 0
             };
 
@@ -262,7 +266,7 @@ namespace ProjectStore.FileService.Controllers
             FileEntity newFile = new FileEntity
             {
                 FileName = file.FileName,
-                Path = "root/" + path,
+                Path = "root/" + path + "/",
                 UserId = 0
             };
 
@@ -272,6 +276,67 @@ namespace ProjectStore.FileService.Controllers
             return Ok();
         }
 
+
+        [HttpDelete("{name}&{isdir:bool}")]
+        public async Task<IActionResult> DeleteOnRoot(string name, bool isdir)
+        {
+            string userPath = "./files/0/";
+            if (name == null)
+            {
+                return BadRequest();
+            }
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/"+name && q.UserId == 0);
+            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == "root/" + name && q.UserId == 0);
+            //Encontrar o ficheiro e apagar
+            if (dir != null && isdir)
+            {
+                //Obtem subdiretorias
+                List<DirectoryEntity> visitedDirs = new List<DirectoryEntity>();
+                List<DirectoryEntity> subdirs = await _fileContext.Directories.Where(q => q.Path == "root/" + name + "/" && q.UserId == 0).ToListAsync();
+                while(subdirs.Count > 0)
+                {
+                    //Remover ultimo elemento
+                    DirectoryEntity workingWith = subdirs.Last();
+                    subdirs.Remove(workingWith);
+
+                    subdirs.AddRange(await _fileContext.Directories.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync());
+                    
+                    //Apagar todos os ficheiros na diretoria.
+                    List<FileEntity> fileDelete = await _fileContext.Files.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync();
+                    foreach (FileEntity fileToDelete in fileDelete)
+                    {
+                        fileToDelete.Path.Replace("root/", "");
+                        FileInfo fa = new FileInfo($"{userPath}/{fileToDelete.Path}{fileToDelete.FileName}");
+                        fa.Delete();
+                        _fileContext.Entry(fileToDelete).State = EntityState.Deleted;
+                        _fileContext.SaveChanges();
+                    }
+                    visitedDirs.Add(workingWith);
+                }
+                
+                foreach(DirectoryEntity dirs in visitedDirs)
+                {
+                    Directory.Delete($"{userPath}{dir.DirName}");
+                    _fileContext.Entry(dirs).State = EntityState.Deleted;
+                    _fileContext.SaveChanges();
+                }
+                
+                return Ok();
+            }
+
+            if (file == null)
+                return NotFound();
+
+            FileInfo f = new FileInfo($"{userPath}{name}");
+            if (f.Exists)
+            {
+                f.Delete();
+            }
+
+            _fileContext.Entry(file).State = EntityState.Deleted;
+            _fileContext.SaveChanges();
+            return Ok();
+        }
         /// <summary>
         /// Elemina um ficheiro guardado no servidor.
         /// </summary>
@@ -281,6 +346,7 @@ namespace ProjectStore.FileService.Controllers
         [HttpDelete("{path}/{name}&{isdir:bool}")]
         public async Task<IActionResult> Delete(string path, string name, bool isdir)
         {
+            path = path.Replace("%2F", "/");
             // Usado para eleminar o ficheiro do servidor
             string userPath = "./files/0/" + path;
             if (name == null)
@@ -292,9 +358,37 @@ namespace ProjectStore.FileService.Controllers
             //Encontrar o ficheiro e apagar
             if (dir != null && isdir)
             {
-                Directory.Delete($"{userPath}{dir.DirName}");
-                _fileContext.Entry(dir).State = EntityState.Deleted;
-                _fileContext.SaveChanges();
+                //Obtem subdiretorias
+                List<DirectoryEntity> visitedDirs = new List<DirectoryEntity>();
+                List<DirectoryEntity> subdirs = await _fileContext.Directories.Where(q => q.Path == "root/" + path + name + "/" && q.UserId == 0).ToListAsync();
+                while (subdirs.Count > 0)
+                {
+                    //Remover ultimo elemento
+                    DirectoryEntity workingWith = subdirs.Last();
+                    subdirs.Remove(workingWith);
+
+                    subdirs.AddRange(await _fileContext.Directories.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync());
+
+                    //Apagar todos os ficheiros na diretoria.
+                    List<FileEntity> fileDelete = await _fileContext.Files.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync();
+                    foreach (FileEntity fileToDelete in fileDelete)
+                    {
+                        fileToDelete.Path.Replace("root/", "");
+                        FileInfo fa = new FileInfo($"{userPath}/{fileToDelete.Path}{fileToDelete.FileName}");
+                        fa.Delete();
+                        _fileContext.Entry(fileToDelete).State = EntityState.Deleted;
+                        _fileContext.SaveChanges();
+                    }
+                    visitedDirs.Add(workingWith);
+                }
+
+                foreach (DirectoryEntity dirs in visitedDirs)
+                {
+                    Directory.Delete($"{userPath}{dir.DirName}");
+                    _fileContext.Entry(dirs).State = EntityState.Deleted;
+                    _fileContext.SaveChanges();
+                }
+
                 return Ok();
             }
 
