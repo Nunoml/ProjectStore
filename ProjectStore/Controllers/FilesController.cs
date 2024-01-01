@@ -164,8 +164,19 @@ namespace ProjectStore.FileService.Controllers
             return Ok(new ReturnFileMetadata(file.FileName, file.Path));
         }
 
+        [HttpPut("editdir/{path}/{name}")]
+        public async Task<IActionResult> EditDirMetadata(string path, string name)
+        {
+            return Ok();
+        }
 
-        [HttpPut("{path}/{name}")]
+        [HttpPut("editdir/{name}")]
+        public async Task<IActionResult> EditDirOnRoot(string path, string name)
+        {
+            return Ok();
+        }
+
+        [HttpPut("editfile/{path}/{name}")]
         public async Task<IActionResult> EditFileMetadata(string path, string name)
         {
             path = path.Replace("%2F", "/");
@@ -176,7 +187,7 @@ namespace ProjectStore.FileService.Controllers
             return Ok();
         }
 
-        [HttpPut("{name}")]
+        [HttpPut("editfile/{name}")]
         public async Task<IActionResult> EditFileMetadataInRoot(string name)
         {
             FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{name}"));
