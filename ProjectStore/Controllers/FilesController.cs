@@ -414,6 +414,10 @@ namespace ProjectStore.FileService.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Retorna Ok se o utilizador está autenticado com um token valido
+        /// </summary>
+        /// <returns>Ok</returns>
         // Apenas testar se consegue validar tokens do serviço de identidade.
         [HttpGet("testingauth")]
         [Authorize]
