@@ -43,47 +43,6 @@ namespace ProjectStore.Identity.Controllers
         }
 
         /// <summary>
-        /// Edits a user
-        /// </summary>
-        /// <param name="edit">Parameters including the current password and new user information.</param>
-        /// <returns>A HTTP Status code representing if the action was successful or not</returns>
-        //TODO
-        [Authorize]
-        [HttpPut()]
-        public async Task<IActionResult> PutUser(EditUserRequest edit)
-        {
-            string? currUser = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int? parsedUser = int.Parse(currUser);
-            User? user = await _context.Users.Where(q => q.UserId == parsedUser).FirstAsync();
-
-            if (user == null)
-            {
-                return BadRequest();
-            }
-
-            // Implement Editing logic here
-
-            if(BCrypt.Net.BCrypt.Verify(edit.PasswordValidation, user.Password))
-            {
-                if (edit.NewPassword != "")
-                {
-                    user.Password = BCrypt.Net.BCrypt.HashPassword(edit.NewPassword);
-                }
-
-                _context.Entry(user).State = EntityState.Modified;
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    return Problem("Error", statusCode: (int)HttpStatusCode.InternalServerError);
-                }
-            }
-            return NoContent();
-        }
-
-        /// <summary>
         /// Deletes a user
         /// </summary>
         /// <returns>204</returns>

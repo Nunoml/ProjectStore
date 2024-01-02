@@ -7,8 +7,6 @@ using ProjectStore.Identity.RequestObject;
 using ProjectStore.Identity.Utility;
 using System.Net;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace ProjectStore.Identity.Controllers
 {
     [Route("api/Auth")]
@@ -28,15 +26,11 @@ namespace ProjectStore.Identity.Controllers
         /// </summary>
         /// <param name="user">POST Parameters including user information</param>
         /// <returns>201 Created or 400 Bad request</returns>
-        // POST: api/Users/create
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=212375
-        // Criar utilizador aqui
         [HttpPost("new")]
         [AllowAnonymous]
         public async Task<IActionResult> CreateUser(RegisterUserRequest user)
         {
             // Verificar se alguns dados já estão a ser usados
-            //TODO : Talvez criar uma forma de interagir com o entity framework numa forma mais simpatica aqui?
             User result = await _context.Set<User>().FirstOrDefaultAsync(query => query.Email == user.Email);
             if (result != null)
             {
