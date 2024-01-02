@@ -92,7 +92,7 @@ namespace ProjectStore.FileService.Controllers
             if (isdir)
             {
                 //correr codigo diretorias.
-                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"root/{name}") && q.UserId == userId);
+                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path+q.DirName == "root/"+name && q.UserId == userId);
                 if (dir == null)
                     return NotFound();
 
@@ -137,7 +137,7 @@ namespace ProjectStore.FileService.Controllers
         {
             string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
             int userId = int.Parse(userClaim);
-            path.Replace("%2F", "/");
+            path = path.Replace("%2F", "/");
             string userPath = $"./files/{userClaim}/{path}";
             if (name == null)
             {
@@ -147,7 +147,7 @@ namespace ProjectStore.FileService.Controllers
             if(isdir)
             {
                 //correr codigo diretorias.
-                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"root/{path}{name}"));
+                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path+q.DirName == "root/"+path+name);
                 if (dir == null)
                     return NotFound();
 
@@ -155,7 +155,7 @@ namespace ProjectStore.FileService.Controllers
             }
 
             //codigo ficheiro
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{path}{name}"));
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/" + path+name);
             if (file == null)
             {
                 return NotFound();
@@ -361,8 +361,8 @@ namespace ProjectStore.FileService.Controllers
             {
                 return BadRequest();
             }
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == userId);
-            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == path + name && q.UserId == userId);
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/"+path + name && q.UserId == userId);
+            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == "root/"+path + name && q.UserId == userId);
             //Encontrar o ficheiro e apagar
             if (dir != null && isdir)
             {
