@@ -30,53 +30,44 @@ namespace ProjectStore.Identity.Controllers
             _config = config;
         }
 
-        // GET: api/Users
+        /// <summary>
+        /// Busca o utilizador autenticado
+        /// </summary>
+        /// <returns>O utilizador autenticado</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        [Authorize]
+        public async Task<ActionResult<User>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
-        }
-
-        // GET: api/Users/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
-
+            var user = await _context.Users.FindAsync(int.Parse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)));
             return user;
         }
 
         /// <summary>
         /// Edits a user
         /// </summary>
-        /// <param name="editInfo">Parameters including the current password and new user information.</param>
+        /// <param name="edit">Parameters including the current password and new user information.</param>
         /// <returns>A HTTP Status code representing if the action was successful or not</returns>
-        // PUT: api/Users/
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut]
+        //TODO
         [Authorize]
-        public async Task<IActionResult> PutUser(EditUserRequest editInfo)
+        [HttpPut()]
+        public async Task<IActionResult> PutUser(EditUserRequest edit)
         {
-            var currUser = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _context.Users.FindAsync(currUser);
+            string? currUser = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int? parsedUser = int.Parse(currUser);
+            User? user = await _context.Users.Where(q => q.UserId == parsedUser).FirstAsync();
 
-            if(user == null)
+            if (user == null)
             {
                 return BadRequest();
             }
 
             // Implement Editing logic here
 
-            if(BCrypt.Net.BCrypt.Verify(editInfo.PasswordValidation, user.Password))
+            if(BCrypt.Net.BCrypt.Verify(edit.PasswordValidation, user.Password))
             {
-                if (editInfo.NewPassword != "")
+                if (edit.NewPassword != "")
                 {
-                    user.Password = BCrypt.Net.BCrypt.HashPassword(editInfo.NewPassword);
+                    user.Password = BCrypt.Net.BCrypt.HashPassword(edit.NewPassword);
                 }
 
                 _context.Entry(user).State = EntityState.Modified;
@@ -95,14 +86,14 @@ namespace ProjectStore.Identity.Controllers
         /// <summary>
         /// Deletes a user
         /// </summary>
-        /// <returns></returns>
-        // DELETE: api/Users/
+        /// <returns>204</returns>
         [HttpDelete]
         [Authorize]
         public async Task<IActionResult> DeleteUser()
         {
-            var currUser = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _context.Users.FindAsync(currUser);
+            string? currUser = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int? parsedUser = int.Parse(currUser);
+            User? user = await _context.Users.Where(q => q.UserId == parsedUser).FirstAsync();
             if (user == null)
             {
                 return NotFound();
@@ -112,11 +103,6 @@ namespace ProjectStore.Identity.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool UserExists(int id)
-        {
-            return _context.Users.Any(e => e.UserId == id);
         }
     }
 }

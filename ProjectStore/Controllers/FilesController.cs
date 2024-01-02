@@ -6,7 +6,10 @@ using ProjectStore.FileService.Model.DBContext;
 using ProjectStore.FileService.RequestObject;
 using System.IO;
 using System;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+
+//Autorização. Se a assinatura do token JWT é valido, vai-se confiar na informação lá dentro em vez de pedir ao servidor identitade para verificar
 
 namespace ProjectStore.FileService.Controllers
 {
@@ -27,10 +30,13 @@ namespace ProjectStore.FileService.Controllers
         /// </summary>
         /// <returns>A lista de ficheiros e diretorias na pasta "root" do utilizador</returns>
         [HttpGet()]
+        [Authorize]
         public async Task<IActionResult> GetRoot()
         {
-            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/" && q.UserId == 0).ToListAsync();
-            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/" && q.UserId == 0).ToListAsync();
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
+            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/" && q.UserId == userId).ToListAsync();
+            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/" && q.UserId == userId).ToListAsync();
             if (files.Count == 0 && directories.Count == 0)
             {
                 return NotFound();
@@ -47,11 +53,14 @@ namespace ProjectStore.FileService.Controllers
         /// <param name="path">A diretoria a analisar.</param>
         /// <returns>A lista de ficheiros e diretorias na pasta especificada no valor path.</returns>
         [HttpGet("{path}")]
+        [Authorize]
         public async Task<IActionResult> Get(string path)
         {
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
             path = path.Replace("%2F", "/");
-            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
-            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/"+path && q.UserId == 0).ToListAsync();
+            List<FileEntity> files = await _fileContext.Files.Where(q => q.Path == "root/"+path && q.UserId == userId).ToListAsync();
+            List<DirectoryEntity> directories = await _fileContext.Directories.Where(q => q.Path == "root/"+path && q.UserId == userId).ToListAsync();
             if (files.Count == 0 && directories.Count == 0)
             {
                 return NotFound();
@@ -69,10 +78,12 @@ namespace ProjectStore.FileService.Controllers
         /// <param name="isdir">Especifica se o ficheiro a ler é uma diretoria.</param>
         /// <returns></returns>
         [HttpGet("{name}&{isdir:bool}/{read:bool}")]
+        [Authorize]
         public async Task<IActionResult> GetFileInRoot(string name, bool read, bool isdir)
         {
-            
-            string userPath = "./files/0/";
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
+            string userPath = $"./files/{userClaim}/";
             if (name == null)
             {
                 return BadRequest();
@@ -81,7 +92,7 @@ namespace ProjectStore.FileService.Controllers
             if (isdir)
             {
                 //correr codigo diretorias.
-                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"root/{name}"));
+                DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.DirName}") == ($"root/{name}") && q.UserId == userId);
                 if (dir == null)
                     return NotFound();
 
@@ -89,7 +100,7 @@ namespace ProjectStore.FileService.Controllers
             }
 
             //codigo ficheiro
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/" + name);
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/" + name && q.UserId == userId);
             if (file == null)
             {
                 return NotFound();
@@ -121,10 +132,13 @@ namespace ProjectStore.FileService.Controllers
         /// <param name="path">O caminho para o ficheiro</param>
         /// <returns>Metadados do ficheiro, ou o ficheiro em si.</returns>
         [HttpGet("{path}/{name}&{isdir:bool}/{read:bool}")]
+        [Authorize]
         public async Task<IActionResult> Get(string name, bool read,bool isdir, string path = "")
         {
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
             path.Replace("%2F", "/");
-            string userPath = "./files/0/" + path;
+            string userPath = $"./files/{userClaim}/{path}";
             if (name == null)
             {
                 return BadRequest();
@@ -164,36 +178,6 @@ namespace ProjectStore.FileService.Controllers
             return Ok(new ReturnFileMetadata(file.FileName, file.Path));
         }
 
-        [HttpPut("editdir/{path}/{name}")]
-        public async Task<IActionResult> EditDirMetadata(string path, string name)
-        {
-            return Ok();
-        }
-
-        [HttpPut("editdir/{name}")]
-        public async Task<IActionResult> EditDirOnRoot(string path, string name)
-        {
-            return Ok();
-        }
-
-        [HttpPut("editfile/{path}/{name}")]
-        public async Task<IActionResult> EditFileMetadata(string path, string name)
-        {
-            path = path.Replace("%2F", "/");
-            string realUserPath = $"./files/0/{path}";
-            
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{path}{name}"));
-            
-            return Ok();
-        }
-
-        [HttpPut("editfile/{name}")]
-        public async Task<IActionResult> EditFileMetadataInRoot(string name)
-        {
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => ($"{q.Path}{q.FileName}") == ($"root/{name}"));
-            return Ok();
-        }
-
         /// <summary>
         /// Envia um ficheiro para o servidor na pasta principal.
         /// </summary>
@@ -201,26 +185,30 @@ namespace ProjectStore.FileService.Controllers
         /// <returns>200 OK</returns>
         [HttpPost("")]
         [RequestSizeLimit(999_000_000)]
+        [Authorize]
         public async Task<IActionResult> Post(IFormFile file)
         {
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
+
             // A pasta root do utilizador seria o id do user?
             if (file == null || file.Length == 0)
                 return BadRequest("No file");
 
-            string filePath = "./files/0/" + file.FileName;
-            Directory.CreateDirectory("./files/0/");
+            string filePath = $"./files/{userClaim}/{file.FileName}";
+            Directory.CreateDirectory($"./files/{userClaim}/");
             //Upload dos ficheiros
             //Ideia basica de upload de ficheiros
-            using (var _fileStream = new FileStream("./files/0/" + file.FileName, FileMode.Create))
+            using (var _fileStream = new FileStream($"./files/{userClaim}/{file.FileName}" , FileMode.Create))
             {
                 await file.CopyToAsync(_fileStream);
             }
-            //Criar entrada na DB TODO
+            //Criar entrada na DB
             FileEntity newFile = new FileEntity
             {
                 FileName = file.FileName,
                 Path = "root/",
-                UserId = 0
+                UserId = userId
             };
 
             _fileContext.Add(newFile);
@@ -237,16 +225,19 @@ namespace ProjectStore.FileService.Controllers
         /// <returns>200 OK</returns>
         [HttpPost("{path}")]
         [RequestSizeLimit(999_000_000)]
+        [Authorize]
         public async Task<IActionResult> CreateFileInPath(IFormFile file, string path)
         {
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
             // Decoding
             path = path.Replace("%2F", "/");
             // A pasta root do utilizador seria o id do user?
             if (file == null || file.Length == 0)
                 return BadRequest("No file");
 
-            string filePath = "./files/0/" + path + "/" + file.FileName;
-            Directory.CreateDirectory("./files/0/" + path);
+            string filePath = $"./files/{userClaim}/{path}/{file.FileName}";
+            Directory.CreateDirectory($"./files/{userClaim}/{path}");
             //Upload dos ficheiros
             //Ideia basica de upload de ficheiros
             using (var _fileStream = new FileStream(filePath, FileMode.Create))
@@ -258,14 +249,14 @@ namespace ProjectStore.FileService.Controllers
             string currDir = "";
             foreach (var dirName in path.Split("/"))
             {
-                DirectoryEntity? dirCheck = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path == "root/" + currDir && q.DirName == dirName && q.UserId == 0);
+                DirectoryEntity? dirCheck = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path == "root/" + currDir && q.DirName == dirName && q.UserId == userId);
                 if(dirCheck == null)
                 {
                     DirectoryEntity dir = new DirectoryEntity
                     {
                         DirName = dirName,
                         Path = "root/" + currDir,
-                        UserId = 0
+                        UserId = userId
                     };
                     currDir += dirName + "/";
                     _fileContext.Add(dir);
@@ -278,7 +269,7 @@ namespace ProjectStore.FileService.Controllers
             {
                 FileName = file.FileName,
                 Path = "root/" + path + "/",
-                UserId = 0
+                UserId = userId
             };
 
             _fileContext.Add(newFile);
@@ -289,31 +280,34 @@ namespace ProjectStore.FileService.Controllers
 
 
         [HttpDelete("{name}&{isdir:bool}")]
+        [Authorize]
         public async Task<IActionResult> DeleteOnRoot(string name, bool isdir)
         {
-            string userPath = "./files/0/";
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
+            string userPath = $"./files/{userClaim}/";
             if (name == null)
             {
                 return BadRequest();
             }
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/"+name && q.UserId == 0);
-            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == "root/" + name && q.UserId == 0);
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == "root/"+name && q.UserId == userId);
+            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == "root/" + name && q.UserId == userId);
             //Encontrar o ficheiro e apagar
             if (dir != null && isdir)
             {
                 //Obtem subdiretorias
                 List<DirectoryEntity> visitedDirs = new List<DirectoryEntity>();
-                List<DirectoryEntity> subdirs = await _fileContext.Directories.Where(q => q.Path == "root/" + name + "/" && q.UserId == 0).ToListAsync();
+                List<DirectoryEntity> subdirs = await _fileContext.Directories.Where(q => q.Path == "root/" + name + "/" && q.UserId == userId).ToListAsync();
                 while(subdirs.Count > 0)
                 {
                     //Remover ultimo elemento
                     DirectoryEntity workingWith = subdirs.Last();
                     subdirs.Remove(workingWith);
 
-                    subdirs.AddRange(await _fileContext.Directories.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync());
+                    subdirs.AddRange(await _fileContext.Directories.Where(q => q.Path == workingWith.Path && q.UserId == userId).ToListAsync());
                     
                     //Apagar todos os ficheiros na diretoria.
-                    List<FileEntity> fileDelete = await _fileContext.Files.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync();
+                    List<FileEntity> fileDelete = await _fileContext.Files.Where(q => q.Path == workingWith.Path && q.UserId == userId).ToListAsync();
                     foreach (FileEntity fileToDelete in fileDelete)
                     {
                         fileToDelete.Path.Replace("root/", "");
@@ -355,33 +349,36 @@ namespace ProjectStore.FileService.Controllers
         /// <param name="name">O nome do ficheiro</param>
         /// <returns>200 OK</returns>
         [HttpDelete("{path}/{name}&{isdir:bool}")]
+        [Authorize]
         public async Task<IActionResult> Delete(string path, string name, bool isdir)
         {
+            string userClaim = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = int.Parse(userClaim);
             path = path.Replace("%2F", "/");
             // Usado para eleminar o ficheiro do servidor
-            string userPath = "./files/0/" + path;
+            string userPath = $"./files/{userClaim}/{path}";
             if (name == null)
             {
                 return BadRequest();
             }
-            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == 0);
-            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == path + name && q.UserId == 0);
+            FileEntity? file = await _fileContext.Set<FileEntity>().FirstOrDefaultAsync(q => q.Path + q.FileName == path + name && q.UserId == userId);
+            DirectoryEntity? dir = await _fileContext.Set<DirectoryEntity>().FirstOrDefaultAsync(q => q.Path + q.DirName == path + name && q.UserId == userId);
             //Encontrar o ficheiro e apagar
             if (dir != null && isdir)
             {
                 //Obtem subdiretorias
                 List<DirectoryEntity> visitedDirs = new List<DirectoryEntity>();
-                List<DirectoryEntity> subdirs = await _fileContext.Directories.Where(q => q.Path == "root/" + path + name + "/" && q.UserId == 0).ToListAsync();
+                List<DirectoryEntity> subdirs = await _fileContext.Directories.Where(q => q.Path == "root/" + path + name + "/" && q.UserId == userId).ToListAsync();
                 while (subdirs.Count > 0)
                 {
                     //Remover ultimo elemento
                     DirectoryEntity workingWith = subdirs.Last();
                     subdirs.Remove(workingWith);
 
-                    subdirs.AddRange(await _fileContext.Directories.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync());
+                    subdirs.AddRange(await _fileContext.Directories.Where(q => q.Path == workingWith.Path && q.UserId == userId).ToListAsync());
 
                     //Apagar todos os ficheiros na diretoria.
-                    List<FileEntity> fileDelete = await _fileContext.Files.Where(q => q.Path == workingWith.Path && q.UserId == 0).ToListAsync();
+                    List<FileEntity> fileDelete = await _fileContext.Files.Where(q => q.Path == workingWith.Path && q.UserId == userId).ToListAsync();
                     foreach (FileEntity fileToDelete in fileDelete)
                     {
                         fileToDelete.Path.Replace("root/", "");
@@ -414,6 +411,15 @@ namespace ProjectStore.FileService.Controllers
 
             _fileContext.Entry(file).State = EntityState.Deleted;
             _fileContext.SaveChanges();
+            return Ok();
+        }
+
+        // Apenas testar se consegue validar tokens do serviço de identidade.
+        [HttpGet("testingauth")]
+        [Authorize]
+        public async Task<IActionResult> AuthTest()
+        {
+            var id = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
             return Ok();
         }
     }

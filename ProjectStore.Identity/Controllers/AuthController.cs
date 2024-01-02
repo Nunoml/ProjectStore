@@ -33,7 +33,7 @@ namespace ProjectStore.Identity.Controllers
         // Criar utilizador aqui
         [HttpPost("new")]
         [AllowAnonymous]
-        public async Task<ActionResult<User>> CreateUser(RegisterUserRequest user)
+        public async Task<IActionResult> CreateUser(RegisterUserRequest user)
         {
             // Verificar se alguns dados já estão a ser usados
             //TODO : Talvez criar uma forma de interagir com o entity framework numa forma mais simpatica aqui?
@@ -45,14 +45,14 @@ namespace ProjectStore.Identity.Controllers
             }
 
             // Hash
-            user.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(user.Password, 14);
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
             var newUser = user.AsUser();
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { id = newUser.UserId }, newUser);
+            return Ok(newUser);
         }
 
         /// <summary>
@@ -62,26 +62,20 @@ namespace ProjectStore.Identity.Controllers
         /// <returns>200 OK if successful, 401 Unauthorized on invalid parameters or wrong information</returns>
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<ActionResult<User>> LoginUser(LoginUserRequest user)
+        public async Task<IActionResult> LoginUser(LoginUserRequest user)
         {
             // Verificar se o user existe.
-            //TODO : Talvez criar uma forma de interagir com o entity framework numa forma mais simpatica aqui?
             User? result = await _context.Set<User>().FirstOrDefaultAsync(query => query.Email == user.Email);
             // Mesmo se o utilizador não existe, melhor tentar fazer a API trabalhar para atrasar o processamento do pedido, evitando certo tipos de ataque.
             if (result == null)
             {
-                result = new User
-                {
-                    Email = "UserDoesNot@Exist.No",
-                    FirstName = "UserDoesNotExist",
-                    LastName = "UserDoesNotExist",
-                    Password = "ouhjghuasiugbsihtbiwfdsaf.saghiksadhbfiashbdff"
-                };
+                string message = string.Format("User {0} does not exist or password is incorrect!", user.Email);
+                return Problem(message, statusCode: (int)HttpStatusCode.Unauthorized);
             }
 
             // Hash
             bool isCorrect = BCrypt.Net.BCrypt.Verify(user.Password, result.Password);
-
+            
             if (!isCorrect)
             {
                 string message = string.Format("User {0} does not exist or password is incorrect!", user.Email);
