@@ -15,7 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nginx", "nginx", "{7CFEDF7F
 		nginx\nginx.conf = nginx\nginx.conf
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectStore.Files", "..\ProjectStore.Files\ProjectStore.Files.csproj", "{07002734-6CA3-40BC-810F-D98CD5D7A861}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectStore.Files", "ProjectStore.Files\ProjectStore.Files.csproj", "{8991826B-485A-4EEA-8103-5945C01A8F2B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +35,10 @@ Global
 		{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7B025BB-2B7C-4FFF-AD91-02B0EA9DF50E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{07002734-6CA3-40BC-810F-D98CD5D7A861}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07002734-6CA3-40BC-810F-D98CD5D7A861}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07002734-6CA3-40BC-810F-D98CD5D7A861}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07002734-6CA3-40BC-810F-D98CD5D7A861}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8991826B-485A-4EEA-8103-5945C01A8F2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8991826B-485A-4EEA-8103-5945C01A8F2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8991826B-485A-4EEA-8103-5945C01A8F2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8991826B-485A-4EEA-8103-5945C01A8F2B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
